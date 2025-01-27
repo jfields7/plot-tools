@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from load_ath_bin import *
+from .load_ath_bin import *
 from scipy.interpolate import griddata
 
 class Image:
