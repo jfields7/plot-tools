@@ -1,0 +1,19 @@
+[project]
+name = "athplot"
+version = "0.1"
+authors = [
+  {name="Jacob Fields", email="jmf6719@psu.edu"},
+]
+description = "A collection of utilities for manipulating and plotting AthenaK binary data"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+license = "GPL-3.0"
+license-files = "LICENSE"
+
+[project.urls]
+Homepage = "https://github.com/jfields7/plot-tools"
+Issues = "https://github.com/jfields7/plot-tools/issues"
