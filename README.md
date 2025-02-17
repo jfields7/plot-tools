@@ -5,6 +5,8 @@ included:
   functionality for plotting slices of data, derived variables, etc.
 * `image.py`: Defines the `Image` class, which can interpolate a 2D slice of `BinaryData`
   onto a Cartesian grid for simpler manipulation. Generally slower than `BinaryData`.
+* `tracker.py`: Defines the `Tracker` class, which can read and manipulate the data output
+  by AthenaK's compact object trackers.
 
 Here are some limitations of the tools:
 * `BinaryData` streams data off the disk a mesh block at a time. While this is more
@@ -13,6 +15,8 @@ Here are some limitations of the tools:
   many orders of magnitude are typically truncated to the data range of the each block,
   which can result in artifacts.
 * Many features, such as derived variables and `Image`, are only supported for 2D data.
+* The `smooth_walk` function of Tracker currently assumes the trajectory of interest is
+  only in the x-y plane.
 
 A number of examples are provided in the `examples` directory.
 
