@@ -7,6 +7,10 @@ included:
   onto a Cartesian grid for simpler manipulation. Generally slower than `BinaryData`.
 * `tracker.py`: Defines the `Tracker` class, which can read and manipulate the data output
   by AthenaK's compact object trackers.
+* `group_data.py`: Defines the `GroupData` class, which loads a collection of `BinaryData`
+  files and stores them in a single place. This is useful for plotting derived variables
+  which depend on variables stored across multiple files (e.g., needing metric data from
+  ADM outputs and velocity data from primitive outputs).
 
 Here are some limitations of the tools:
 * `BinaryData` streams data off the disk a mesh block at a time. While this is more
