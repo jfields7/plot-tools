@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling >= 1.26", "numpy >= 1.13", "scipy >= 1.10.0", "matplotlib >= 2.2"]
+build-backend = "hatchling.build"
+
 [project]
 name = "athplot"
 version = "0.1"
@@ -12,7 +16,7 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 license = "GPL-3.0"
-license-files = "LICENSE"
+license-files = ["LICENSE"]
 
 [project.urls]
 Homepage = "https://github.com/jfields7/plot-tools"
