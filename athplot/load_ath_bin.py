@@ -320,7 +320,7 @@ class MeshBlockSlice:
     assert self.dimension in ['x', 'y', 'z']
     self.pos = slice_loc[1]
 
-    self.empty = self.block.is_in_slice(self.dimension, self.pos)
+    self.empty = not self.block.is_in_slice(self.dimension, self.pos)
 
     Z, Y, X = self.block.get_coord_blocks()
     extent = self.block.get_extent()
