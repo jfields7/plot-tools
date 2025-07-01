@@ -23,34 +23,32 @@ class Image:
     does is it creates an single interpolator from all the MeshBlock data in a specified
     region in a feeble attempt to prevent the renderer from doing weird things because a
     plot is broken up into hundreds of small pieces.
-    TODO: Right now this assumes 2D data.
   """
-  def __init__(self, filename, extent, var):
+  def __init__(self, filename, extent, var, slice_loc=None):
     self.data = BinaryData(filename)
     self.extent = extent
     self.var = var
 
-    self.ConstructData()
+    if not self.data.is_2d() and slice_loc is None:
+      raise RuntimeError("Image requires 2D data, or a slice specification")
 
-  def ConstructData(self):
+    self.ConstructData(slice_loc)
+
+  def ConstructData(self, slice_loc=None):
     xpoints = np.empty(0)
     ypoints = np.empty(0)
     data    = np.empty(0)
 
-    with open(self.data.filename, 'rb') as f:
-      for block in self.data.blocks:
-        xs, ys = block.get_coord_blocks()
-        block_extent = block.get_extent()
-        # Exclude blocks that will not be in the final image.
-        if self.extent[1] < block_extent[0] or self.extent[0] > block_extent[1] \
-           or self.extent[3] < block_extent[2] or self.extent[2] > block_extent[3]:
-          continue
-
-        xpoints = np.append(xpoints, xs.flatten(order='C'))
-        ypoints = np.append(ypoints, ys.flatten(order='C'))
-
-        block_data = block.get_var(f, self.var, self.data.block_cell_format).transpose()
-        data = np.append(data, block_data.flatten(order='C'))
+    for block, block_data in self.data.get_block_data(self.var, slice_loc):
+      block_extent = block.get_extent()
+      # Exclude blocks that will not be in the final image.
+      if self.extent[1] < block_extent[0] or self.extent[0] > block_extent[1] \
+        or self.extent[3] < block_extent[2] or self.extent[2] > block_extent[3]:
+        continue
+      block_xs, block_ys = block.get_coord_blocks()
+      xpoints = np.append(xpoints, block_xs.flatten(order='C'))
+      ypoints = np.append(ypoints, block_ys.flatten(order='C'))
+      data = np.append(data, block_data.T.flatten(order='C'))
     
     self.xpoints = xpoints
     self.ypoints = ypoints

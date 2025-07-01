@@ -150,6 +150,7 @@ class BinaryData:
         block_lims = struct.unpack('=6' + location_format, f.read(6 * self.location_size))
 
         self.blocks.append(MeshBlock([block_nx, block_ny, block_nz],
+                           block_i, block_j, block_k, block_level,
                            varsize, block_lims,
                            self.variable_names, f.tell()))
         f.seek(nvars*varsize,1)
@@ -159,90 +160,32 @@ class BinaryData:
   def is_2d(self):
     return self.blocks[0].is_2d()
 
-  def plot_streams(self, varx, vary, ax=plt, color='k', slice_loc=None, rescale=1.,
-                   density=1, linewidth=None):
-    pcm = None
-    if not self.is_2d() and slice_loc==None:
-      if slice_loc==None:
-        raise RuntimeError('Slice must be specified for 3D data.')
-    elif self.is_2d():
-      if slice_loc!=None:
-        raise RuntimeError('Slice cannot be specified for 2D data.')
-      with open(self.filename, 'rb') as f:
-        for block in self.blocks:
-          vx = block.get_var(f, varx, self.block_cell_format)*rescale
-          vy = block.get_var(f, vary, self.block_cell_format)*rescale
-          xs, ys = block.get_coords()
-          pcm = ax.streamplot(xs, ys, vx, vy, color=color,
-                              density=density, linewidth=linewidth)
+  def get_block_data(self, var, slice_loc=None):
+    if self.is_2d() and slice_loc is not None:
+      raise RuntimeError("Slice cannot be specified for 2D data.")
 
-  def plot_slice(self, var, ax=plt, cmap='viridis', norm=None, vmin=None, vmax=None,
-                 interpolation='none', origin='lower', slice_loc=None,rescale=1.):
-    pcm = None
-    if len(var) >= 8:
-      if var[:8] == 'derived:':
-        if self.is_2d():
-          with open(self.filename, 'rb') as f:
-            fn = self.derived_vars[var][0]
-            fnvars = self.derived_vars[var][1:]
-
-            for block in self.blocks:
-              fnargs = []
-              for v in fnvars:
-                fnargs.append(block.get_var(f, v, self.block_cell_format)*rescale)
-              data = fn(*tuple(fnargs))
-              extent = block.get_extent()
-              pcm = ax.imshow(data, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
-                         interpolation=interpolation, origin=origin,
-                         extent=extent)
+    with open(self.filename, "rb") as f:
+      for block in self.blocks:
+        if not self.is_2d() and slice_loc is not None:
+          block = MeshBlockSlice(block, slice_loc)
+          if block.empty:
+            continue
+        # Collect the data
+        if var[:8] == "derived:":
+          fnargs = []
+          for v in self.derived_vars[var][1:]:
+            fnargs.append(block.get_var(f, v, self.block_cell_format))
+          yield block, self.derived_vars[var][0](*tuple(fnargs))
         else:
-          raise RuntimeError('Derived variables not currently supported for 3D slicing.')
-        return pcm
+          yield block, block.get_var(f, var, self.block_cell_format)
 
-    if not self.is_2d() and slice_loc==None:
-      if slice_loc==None:
-        raise RuntimeError('Slice must be specified for 3D data.')
-    elif self.is_2d():
-      if slice_loc!=None:
-        raise RuntimeError('Slice cannot be specified for 2D data.')
-      with open(self.filename, 'rb') as f:
-        for block in self.blocks:
-          data = block.get_var(f, var, self.block_cell_format)*rescale
-          extent = block.get_extent()
-          pcm = ax.imshow(data, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
-                     interpolation=interpolation, origin=origin,
-                     extent=extent)
-    else:
-      # Extract slice information
-      dimension = slice_loc[0]
-      pos = slice_loc[1]
-      with open(self.filename, 'rb') as f:
-        for block in self.blocks:
-          if block.is_in_slice(dimension, pos):
-            # Construct the slice
-            Z, Y, X = block.get_coord_blocks()
-            extent = block.get_extent()
-            mask = None
-            shape = None
-            if dimension == 'x':
-              mask = block.make_slice_mask(X, dimension, pos)
-              extent = (extent[2], extent[3], extent[4], extent[5])
-              shape = (block.size[2], block.size[1])
-            elif dimension == 'y':
-              mask = block.make_slice_mask(Y, dimension, pos)
-              extent = (extent[0], extent[1], extent[4], extent[5])
-              shape = (block.size[2], block.size[0])
-            elif dimension == 'z':
-              mask = block.make_slice_mask(Z, dimension, pos)
-              extent = (extent[0], extent[1], extent[2], extent[3])
-              shape = (block.size[1], block.size[0])
-            # Collect the data and plot it accordingly
-            data = block.get_var(f, var, self.block_cell_format)*rescale
-            data = np.reshape(data[mask], shape)
-            pcm = ax.imshow(data, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
-                       interpolation=interpolation, origin=origin,
-                       extent=extent)
-
+  def plot_slice(self, var, ax=plt.gca(), cmap='viridis', norm=None, vmin=None, vmax=None,
+                 interpolation='none', origin='lower', slice_loc=None, rescale=1.):
+    pcm = None
+    for block, data in self.get_block_data(var, slice_loc):
+      pcm = ax.imshow(data*rescale, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
+                      interpolation=interpolation, origin=origin,
+                      extent=block.get_extent())
     return pcm
 
   def register_derived_variable(self, name, f, *args):
@@ -258,8 +201,12 @@ class MeshBlock:
   entirely in memory. If we instead store the MeshBlocks with the location of each
   variable in the file, we can stream it off the disk instead.
   '''
-  def __init__(self, size, datasize, coords, variables, datastart):
+  def __init__(self, size, i, j, k, level, datasize, coords, variables, datastart):
     self.size = size
+    self.i = i
+    self.j = j
+    self.k = k
+    self.level = level
     self.datasize = datasize
     self.coords = coords
     self.dx = [(coords[1]-coords[0])/size[0],
@@ -365,3 +312,63 @@ class MeshBlock:
 
   def is_2d(self):
     return (self.size[0] == 1) or (self.size[1] == 1) or (self.size[2] == 1)
+
+class MeshBlockSlice:
+  def __init__(self, meshblock, slice_loc):
+    self.block = meshblock
+    self.dimension = slice_loc[0]
+    assert self.dimension in ['x', 'y', 'z']
+    self.pos = slice_loc[1]
+
+    self.empty = not self.block.is_in_slice(self.dimension, self.pos)
+
+    Z, Y, X = self.block.get_coord_blocks()
+    extent = self.block.get_extent()
+    if self.dimension == 'x':
+      self.mask = self.block.make_slice_mask(X, self.dimension, self.pos)
+      self.extent = (extent[2], extent[3], extent[4], extent[5])
+      self.shape = (self.block.size[2], self.block.size[1])
+    elif self.dimension == 'y':
+      self.mask = self.block.make_slice_mask(Y, self.dimension, self.pos)
+      self.extent = (extent[0], extent[1], extent[4], extent[5])
+      self.shape = (self.block.size[2], self.block.size[0])
+    elif self.dimension == 'z':
+      self.mask = self.block.make_slice_mask(Z, self.dimension, self.pos)
+      self.extent = (extent[0], extent[1], extent[2], extent[3])
+      self.shape = (self.block.size[1], self.block.size[0])
+
+  def get_var(self, f, name, block_cell_format):
+    if self.empty:
+      return None
+    data = self.block.get_var(f, name, block_cell_format, self.mask)
+    return data[self.mask].reshape(self.shape)
+
+  def get_coords(self):
+    if self.empty:
+      return None
+    X, Y, Z = self.block.get_coords()
+    if self.dimension == 'x':
+      return Y, Z
+    elif self.dimesion == 'y':
+      return X, Z
+    elif self.dimesion == 'z':
+      return X, Y
+  
+  def get_coord_blocks(self):
+    if self.empty:
+      return None
+    Z, Y, X = self.block.get_coord_blocks()
+    if self.dimension == 'x':
+      return Z.reshape(self.shape), Y.reshape(self.shape)
+    elif self.dimesion == 'y':
+      return Z.reshape(self.shape), X.reshape(self.shape)
+    elif self.dimesion == 'z':
+      return Y.reshape(self.shape), X.reshape(self.shape)
+
+  def get_extent(self):
+    if self.empty:
+      return None
+    return self.extent
+
+  def is_2d(self):
+    return True
