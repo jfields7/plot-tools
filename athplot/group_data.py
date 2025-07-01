@@ -1,4 +1,5 @@
-# AthPlot: manipulate and plot AthenaK binary data                                                     # Copyright (C) 2025, Jacob Fields <jmf6719@psu.ed>
+# AthPlot: manipulate and plot AthenaK binary data
+# Copyright (C) 2025, Jacob Fields <jmf6719@psu.ed>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
