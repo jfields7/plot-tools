@@ -18,7 +18,6 @@ Here are some limitations of the tools:
   beforehand. Additionally, limitations in `matplotlib` mean that plot ranges spanning
   many orders of magnitude are typically truncated to the data range of the each block,
   which can result in artifacts.
-* Many features, such as derived variables and `Image`, are only supported for 2D data.
 * The `smooth_walk` function of Tracker currently assumes the trajectory of interest is
   only in the x-y plane.
 
