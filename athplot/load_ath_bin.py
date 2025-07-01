@@ -160,12 +160,14 @@ class BinaryData:
   def is_2d(self):
     return self.blocks[0].is_2d()
 
-  def get_block_data(self, var, slice_loc=None):
+  def get_block_data(self, var, slice_loc = None, block_filter = lambda x: True):
     if self.is_2d() and slice_loc is not None:
       raise RuntimeError("Slice cannot be specified for 2D data.")
 
     with open(self.filename, "rb") as f:
       for block in self.blocks:
+        if not block_filter(block):
+          continue
         if not self.is_2d() and slice_loc is not None:
           block = MeshBlockSlice(block, slice_loc)
           if block.empty:
@@ -181,6 +183,8 @@ class BinaryData:
 
   def plot_slice(self, var, ax=plt.gca(), cmap='viridis', norm=None, vmin=None, vmax=None,
                  interpolation='none', origin='lower', slice_loc=None, rescale=1.):
+    if not self.is_2d() and slice_loc is None:
+      raise RuntimeError("You need to specify a slice for 3D data")
     pcm = None
     for block, data in self.get_block_data(var, slice_loc):
       pcm = ax.imshow(data*rescale, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
@@ -235,7 +239,7 @@ class MeshBlock:
       else:
         return data[0,:,:]
     else:
-      if slice_mask == None:
+      if slice_mask is None:
         return data
       else:
         return data[slice_mask]
@@ -340,7 +344,7 @@ class MeshBlockSlice:
   def get_var(self, f, name, block_cell_format):
     if self.empty:
       return None
-    data = self.block.get_var(f, name, block_cell_format, self.mask)
+    data = self.block.get_var(f, name, block_cell_format)
     return data[self.mask].reshape(self.shape)
 
   def get_coords(self):
