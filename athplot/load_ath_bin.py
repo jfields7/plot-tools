@@ -181,15 +181,19 @@ class BinaryData:
         else:
           yield block, block.get_var(f, var, self.block_cell_format)
 
-  def plot_slice(self, var, ax=plt.gca(), cmap='viridis', norm=None, vmin=None, vmax=None,
-                 interpolation='none', origin='lower', slice_loc=None, rescale=1.):
+  def plot_slice(self, var, ax=None, cmap='viridis', norm=None, vmin=None, vmax=None,
+                 interpolation='none', origin='lower', slice_loc=None, rescale=1.,
+                 unit_length=1.0):
+    if ax is None:
+      ax = plt.gca()
     if not self.is_2d() and slice_loc is None:
       raise RuntimeError("You need to specify a slice for 3D data")
     pcm = None
     for block, data in self.get_block_data(var, slice_loc):
+      extent = [unit_length*l for l in block.get_extent()]
       pcm = ax.imshow(data*rescale, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
                       interpolation=interpolation, origin=origin,
-                      extent=block.get_extent())
+                      extent=extent)
     return pcm
 
   def register_derived_variable(self, name, f, *args):
