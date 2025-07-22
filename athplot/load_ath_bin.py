@@ -189,11 +189,18 @@ class BinaryData:
     if not self.is_2d() and slice_loc is None:
       raise RuntimeError("You need to specify a slice for 3D data")
     pcm = None
+    xmin, xmax, ymin, ymax = [], [], [], []
     for block, data in self.get_block_data(var, slice_loc):
       extent = [unit_length*l for l in block.get_extent()]
+      xmin.append(extent[0])
+      xmax.append(extent[1])
+      ymin.append(extent[2])
+      ymax.append(extent[3])
       pcm = ax.imshow(data*rescale, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
                       interpolation=interpolation, origin=origin,
                       extent=extent)
+    ax.set_xlim(min(xmin), max(xmax))
+    ax.set_ylim(min(ymin), max(ymax))
     return pcm
 
   def register_derived_variable(self, name, f, *args):
