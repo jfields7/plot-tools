@@ -374,11 +374,11 @@ class MeshBlockSlice:
       return None
     Z, Y, X = self.block.get_coord_blocks()
     if self.dimension == 'x':
-      return Z.reshape(self.shape), Y.reshape(self.shape)
+      return Z[self.mask].reshape(self.shape), Y[self.mask].reshape(self.shape)
     elif self.dimesion == 'y':
-      return Z.reshape(self.shape), X.reshape(self.shape)
+      return Z[self.mask].reshape(self.shape), X[self.mask].reshape(self.shape)
     elif self.dimesion == 'z':
-      return Y.reshape(self.shape), X.reshape(self.shape)
+      return Y[self.mask].reshape(self.shape), X[self.mask].reshape(self.shape)
 
   def get_extent(self):
     if self.empty:
