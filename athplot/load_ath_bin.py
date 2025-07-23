@@ -173,7 +173,12 @@ class BinaryData:
           if block.empty:
             continue
         # Collect the data
-        if var[:8] == "derived:":
+        if type(var) is list or type(var) is tuple:
+          fnargs = []
+          for v in var:
+            fnargs.append(block.get_var(f, v, self.block_cell_format))
+          yield block, tuple(fnargs)
+        elif type(var) is str and var[:8] == "derived:":
           fnargs = []
           for v in self.derived_vars[var][1:]:
             fnargs.append(block.get_var(f, v, self.block_cell_format))
@@ -184,6 +189,7 @@ class BinaryData:
   def plot_slice(self, var, ax=None, cmap='viridis', norm=None, vmin=None, vmax=None,
                  interpolation='none', origin='lower', slice_loc=None, rescale=1.,
                  unit_length=1.0):
+    assert (type(var) is str)
     if ax is None:
       ax = plt.gca()
     if not self.is_2d() and slice_loc is None:
@@ -374,11 +380,11 @@ class MeshBlockSlice:
       return None
     Z, Y, X = self.block.get_coord_blocks()
     if self.dimension == 'x':
-      return Z.reshape(self.shape), Y.reshape(self.shape)
+      return Z[self.mask].reshape(self.shape), Y[self.mask].reshape(self.shape)
     elif self.dimesion == 'y':
-      return Z.reshape(self.shape), X.reshape(self.shape)
+      return Z[self.mask].reshape(self.shape), X[self.mask].reshape(self.shape)
     elif self.dimesion == 'z':
-      return Y.reshape(self.shape), X.reshape(self.shape)
+      return Y[self.mask].reshape(self.shape), X[self.mask].reshape(self.shape)
 
   def get_extent(self):
     if self.empty:
