@@ -276,7 +276,7 @@ class MeshBlock:
   def get_coord_blocks(self):
     if self.is_2d():
       x, y = self.get_coords()
-      return np.meshgrid(x, y, indexing='ij')
+      return np.meshgrid(y, x, indexing='ij')
     else:
       x, y, z = self.get_coords()
       return np.meshgrid(z, y, x, indexing='ij')
@@ -333,6 +333,22 @@ class MeshBlock:
 
   def is_2d(self):
     return (self.size[0] == 1) or (self.size[1] == 1) or (self.size[2] == 1)
+
+  def restrict(self):
+    """Returns a slice of a global array that contains only this block
+
+    NOTE. This currently works only for unigrid and assumes that ghost zones
+    are not included in the output.
+    """
+    sl = []
+    ijk = [self.i, self.j, self.k]
+    for d in [2,1,0]:
+      if self.size[d] == 1:
+        sl.append(slice(0, 1))
+      else:
+        sl.append(slice(ijk[d]*self.size[d],
+                        ijk[d]*self.size[d] + self.size[d]))
+    return tuple(sl)
 
 class MeshBlockSlice:
   def __init__(self, meshblock, slice_loc):
