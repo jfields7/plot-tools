@@ -45,10 +45,10 @@ class Image:
       if self.extent[1] < block_extent[0] or self.extent[0] > block_extent[1] \
         or self.extent[3] < block_extent[2] or self.extent[2] > block_extent[3]:
         continue
-      block_xs, block_ys = block.get_coord_blocks()
+      block_ys, block_xs = block.get_coord_blocks()
       xpoints = np.append(xpoints, block_xs.flatten(order='C'))
       ypoints = np.append(ypoints, block_ys.flatten(order='C'))
-      data = np.append(data, block_data.T.flatten(order='C'))
+      data = np.append(data, block_data.flatten(order='C'))
     
     self.xpoints = xpoints
     self.ypoints = ypoints
