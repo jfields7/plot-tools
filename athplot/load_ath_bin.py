@@ -224,6 +224,7 @@ class MeshBlock:
   '''
   def __init__(self, size, i, j, k, level, datasize, coords, variables, datastart):
     self.size = size
+    self.shape = self.size
     self.i = i
     self.j = j
     self.k = k
@@ -409,3 +410,19 @@ class MeshBlockSlice:
 
   def is_2d(self):
     return True
+
+  def restrict(self):
+    """Returns a slice of a global array that contains only this block"""
+    sl = []
+    ijk = [self.block.i, self.block.j, self.block.k]
+    for d in [2, 1, 0]:
+      if self.dimension == 'x' and d != 0:
+        sl.append(slice(ijk[d] * self.block.size[d],
+                        ijk[d] * self.block.size[d] + self.block.size[d]))
+      elif self.dimension == 'y' and d != 1:
+        sl.append(slice(ijk[d] * self.block.size[d],
+                        ijk[d] * self.block.size[d] + self.block.size[d]))
+      elif self.dimension == 'z' and d != 2:
+        sl.append(slice(ijk[d] * self.block.size[d],
+                        ijk[d] * self.block.size[d] + self.block.size[d]))
+    return tuple(sl)
