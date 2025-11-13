@@ -11,6 +11,8 @@ included:
   files and stores them in a single place. This is useful for plotting derived variables
   which depend on variables stored across multiple files (e.g., needing metric data from
   ADM outputs and velocity data from primitive outputs).
+* `load_sph_vtk.py`: Defines the `SphericalData` class for reading in spherical VTK dumps.
+  Contains functionality for 3D plots of data on a sphere.
 
 Here are some limitations of the tools:
 * `BinaryData` streams data off the disk a mesh block at a time. While this is more
