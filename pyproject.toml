@@ -1,12 +1,13 @@
 [build-system]
-requires = ["hatchling >= 1.26", "numpy >= 1.13", "scipy >= 1.10.0", "matplotlib >= 2.2"]
+requires = ["hatchling >= 1.26", "numpy >= 1.13", "scipy >= 1.10.0", "matplotlib >= 2.2",
+            "vtk >= 9.4"]
 build-backend = "hatchling.build"
 
 [project]
 name = "athplot"
-version = "0.1"
+version = "0.2"
 authors = [
-  {name="Jacob Fields", email="jmf6719@psu.edu"},
+  {name="Jacob Fields", email="fields@ias.edu"},
 ]
 description = "A collection of utilities for manipulating and plotting AthenaK binary data"
 readme = "README.md"
