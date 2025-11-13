@@ -56,9 +56,11 @@ class GroupData:
       raise RuntimeError("Derived variable name must begin with 'derived:'!")
     self.derived_vars[name] = [f, *args]
 
-  def plot_slice(self, var, ax=plt, cmap='viridis', norm=None, vmin=None, vmax=None,
+  def plot_slice(self, var, ax=None, cmap='viridis', norm=None, vmin=None, vmax=None,
                  interpolation='none', origin='lower', slice_loc=None, rescale=1.):
     pcm = None
+    if ax == None:
+      ax = plt.gca()
 
     if len(var) >= 8:
       if var[:8] == 'derived:':
@@ -104,7 +106,7 @@ class GroupData:
         return pcm
     
     # If we aren't plotting a derived variable, we can simply resort to normal plotting
-    for data in datasets:
+    for data in self.datasets:
       if var in data.variable_names:
         pcm = data.plot_slice(var, ax, cmap, norm, vmin, vmax, interpolation, origin,
                               slice_loc, rescale)
