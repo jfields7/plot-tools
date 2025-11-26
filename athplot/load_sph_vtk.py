@@ -27,8 +27,32 @@ class SphericalData:
 
     Note that this utility relies on the VTK python package.
   """
-  def __init__(self, filename):
-    # Open the file
+  def __init__(self, filename, encoding='latin_1'):
+    # Extract metadata stored as a comment in the second line
+    string = ""
+    with open(filename, 'r', encoding=encoding) as f:
+        l = 0
+        for line in f:
+            if l == 1:
+                string = line.strip()
+                break
+            else:
+                l += 1
+
+    substrings = string.split()
+    for s in substrings:
+        if s[:5] == 'time=':
+            self.time = float(s[5:])
+        if s[:6] == 'cycle=':
+            self.cycle = int(s[6:])
+        if s[:3] == 'xc=':
+            self.xc = float(s[3:])
+        if s[:3] == 'yc=':
+            self.yc = float(s[3:])
+        if s[:3] == 'zc=':
+            self.zc = float(s[3:])
+
+    # Open the file with the VTK reader
     reader = vtkStructuredGridReader()
 
     reader.SetFileName(filename)

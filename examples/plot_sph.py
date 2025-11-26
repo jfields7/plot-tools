@@ -32,6 +32,8 @@ ax = fig.add_subplot(111, projection='3d')
 
 surf, sm = data.plot_data('dens', ax, cmap='inferno', norm=LogNorm(vmin=3e-15, vmax=1.28e-3))
 
+ax.set_title(f't = {data.time}')
+
 fig.colorbar(sm, ax=ax)
 
 plt.show()
