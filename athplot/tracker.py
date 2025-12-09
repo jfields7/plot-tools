@@ -36,14 +36,28 @@ class Tracker:
     # First, we need to clean up the data for the x and y directions, which
     # we do separately since they often change at different times
     x_idcs = [0]
+    edge = -1
     for i in range(1,len(self.time)):
+      if self.x[x_idcs[-1]] == self.x[i]:
+        edge = i
       if not self.x[x_idcs[-1]] == self.x[i]:
+        # Adjust the edge of the last point
+        if edge > 0 and not x_idcs[-1] == 0:
+          x_idcs[-1] = (x_idcs[-1] + edge)//2
         x_idcs.append(i)
+        edge = -1
 
     y_idcs = [0]
+    edge = -1
     for i in range(1,len(self.time)):
+      if self.y[y_idcs[-1]] == self.y[i]:
+        edge = i
       if not self.y[y_idcs[-1]] == self.y[i]:
+        # Adjust the edge of the last point
+        if edge > 0 and not y_idcs[-1] == 0:
+          y_idcs[-1] = (y_idcs[-1] + edge)//2
         y_idcs.append(i)
+        edge = -1
 
     # Now construct interpolating splines for each trajectory
     cs_x = make_smoothing_spline(self.time[x_idcs], self.x[x_idcs])
