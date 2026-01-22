@@ -97,7 +97,7 @@ class GroupData:
             extent = self.datasets[0].blocks[i].get_extent()
             pcm = ax.imshow(img_data, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
                        interpolation=interpolation, origin=origin,
-                       extent=extent)
+                       extent=extent, interpolation_stage='rgba')
 
           for f in files:
             f.close()

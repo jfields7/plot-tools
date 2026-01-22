@@ -204,7 +204,7 @@ class BinaryData:
       ymax.append(extent[3])
       pcm = ax.imshow(data*rescale, cmap=cmap, norm=norm, vmin=vmin, vmax=vmax,
                       interpolation=interpolation, origin=origin,
-                      extent=extent)
+                      extent=extent, interpolation_stage='rgba')
     ax.set_xlim(min(xmin), max(xmax))
     ax.set_ylim(min(ymin), max(ymax))
     return pcm
