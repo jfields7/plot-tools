@@ -1,3 +1,5 @@
+[![Test Status](https://github.com/jfields7/plot-tools/actions/workflows/python-test.yml/badge.svg)](https://github.com/jfields7/plot-tools/actions/workflows/python-test.yml)
+
 # plot-tools
 A collection of plotting tools and utilities for AthenaK. Here are the files currently
 included:

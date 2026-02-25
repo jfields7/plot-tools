@@ -1,0 +1,22 @@
+name: Python Tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  jobs:
+    tests:
+      runs-on: ubuntu-latest
+
+      steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          pip install git+https://github.com/computationalrelativity/PyCompOSE.git h5py numpy scipy pytest
+          cd ${{ github.workspace }}/tests
+          echo "Running tests..."
+          for t in *.py:
+            python3 -m pytest $t
+          done
