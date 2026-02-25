@@ -18,5 +18,5 @@ jobs:
         cd ${{ github.workspace }}/$tests
         echo "Running tests..."
         for t in *.py:
-          python3 -m pytest $t
+          python -m pytest $t
         done
