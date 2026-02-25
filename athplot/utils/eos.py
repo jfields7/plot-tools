@@ -32,8 +32,8 @@ class EquationOfState:
     self.log2_ = np.log2
     self.exp2_ = np.exp2
     if use_NQT:
-      from compose.utils.NQTs.NQTLib import NQT_exp2_02 as NQT_exp
-      from compose.utils.NQTs.NQTLib import NQT_log2_02 as NQT_log
+      from compose.NQTs.NQTLib import NQT_exp2_O2 as NQT_exp
+      from compose.NQTs.NQTLib import NQT_log2_O2 as NQT_log
 
       self.log2_ = NQT_log
       self.exp2_ = NQT_exp
@@ -60,6 +60,10 @@ class EquationOfState:
     press = np.array(table['Q1'])*(np.array(table['nb'])[:,np.newaxis,np.newaxis])
     e = (np.array(table['Q7']) + 1.)*(np.array(table['nb'])[:,np.newaxis,np.newaxis])*self.mn
     cs2 = table['cs2']
+
+    self.press_raw = press
+    self.e_raw = e
+    self.cs2_raw = cs2
 
     # Derived scalars
     self.hmin = np.min((e + press)/(np.array(table['nb'])[:,np.newaxis,np.newaxis]))
@@ -94,9 +98,9 @@ class EquationOfState:
   """
   def calc_enthalpy(self, nb, yq, t):
     pts = np.column_stack((
-      self.log2_(np.clip(nb.flatten(), nb_min, nb_max)),
-      np.clip(yq.flatten(), yq_min, yq_max),
-      self.log2_(np.clip(t.flatten(), t_min, t_max))))
+      self.log2_(np.clip(nb.flatten(), self.nb_min, self.nb_max)),
+      np.clip(yq.flatten(), self.yq_min, self.yq_max),
+      self.log2_(np.clip(t.flatten(), self.t_min, self.t_max))))
 
     p = self.exp2_(self.lpress(pts))
     e = self.exp2_(self.le(pts))
@@ -117,9 +121,9 @@ class EquationOfState:
   """
   def calc_pressure(self, nb, yq, t):
     pts = np.column_stack((
-      self.log2_(np.clip(nb.flatten(), nb_min, nb_max)),
-      np.clip(yq.flatten(), yq_min, yq_max),
-      self.log2_(np.clip(t.flatten(), t_min, t_max))))
+      self.log2_(np.clip(nb.flatten(), self.nb_min, self.nb_max)),
+      np.clip(yq.flatten(), self.yq_min, self.yq_max),
+      self.log2_(np.clip(t.flatten(), self.t_min, self.t_max))))
 
     return self.exp2_(self.lpress(pts)).reshape(nb.shape)
 
@@ -138,8 +142,8 @@ class EquationOfState:
   """
   def calc_energy_dens(self, nb, yq, t):
     pts = np.column_stack((
-      self.log2_(np.clip(nb.flatten(), nb_min, nb_max)),
-      np.clip(yq.flatten(), yq_min, yq_max),
-      self.log2_(np.clip(t.flatten(), t_min, t_max))))
+      self.log2_(np.clip(nb.flatten(), self.nb_min, self.nb_max)),
+      np.clip(yq.flatten(), self.yq_min, self.yq_max),
+      self.log2_(np.clip(t.flatten(), self.t_min, self.t_max))))
 
     return self.exp2_(self.le(pts)).reshape(nb.shape)
