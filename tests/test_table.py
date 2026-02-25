@@ -45,11 +45,35 @@ def check_pressure(use_NQT):
     table = EquationOfState('tables/SFHo_reduced_NQT.h5',use_NQT=True)
   else:
     table = EquationOfState('tables/SFHo_reduced.h5')
+  # Check that the interpolator returns exact points correctly
   lnb, yq, lt = np.meshgrid(table.lnb, table.yq, table.lt, indexing='ij')
 
   p_calc = table.calc_pressure(table.exp2_(lnb), yq, table.exp2_(lt))
 
-  err = np.abs(p_calc - table.press_raw)
+  err = np.abs(p_calc/table.press_raw - 1.)
+  if np.max(err) != pytest.approx(0.0, rel=1e-15):
+    return False
+  
+  # Check that interpolation is reasonable in between points and is behaving linearly.
+  lnbs = 0.5*(table.lnb[:-1] + table.lnb[1:])
+  yqs  = 0.5*(table.yq[:-1] + table.yq[1:])
+  lts  = 0.5*(table.lt[:-1] + table.lt[1:])
+
+  lnb, yq, lt = np.meshgrid(lnbs, yqs, lts, indexing='ij')
+
+  p_calc = table.calc_pressure(table.exp2_(lnb), yq, table.exp2_(lt))
+
+  p_exact = table.exp2_(0.125*(((table.log2_(table.press_raw[:-1, :-1, :-1]) +
+                                 table.log2_(table.press_raw[:-1, :-1, 1:])) + 
+                                (table.log2_(table.press_raw[:-1, 1:, :-1]) +
+                                 table.log2_(table.press_raw[:-1, 1:, 1:]))) +
+                               ((table.log2_(table.press_raw[1:, :-1, :-1]) +
+                                 table.log2_(table.press_raw[1:, :-1, 1:])) +
+                                (table.log2_(table.press_raw[1:, 1:, :-1]) +
+                                 table.log2_(table.press_raw[1:, 1:, 1:])))))
+
+  err = np.abs(p_calc/p_exact - 1.)
+  print (np.max(err))
   return np.max(err) == pytest.approx(0.0, rel=1e-15)
 
 def check_energy(use_NQT):
@@ -61,8 +85,32 @@ def check_energy(use_NQT):
 
   e_calc = table.calc_energy_dens(table.exp2_(lnb), yq, table.exp2_(lt))
 
-  err = np.abs(e_calc - table.e_raw)
+  err = np.abs(e_calc/table.e_raw - 1.)
+  if np.max(err) != pytest.approx(0.0, rel=1e-15):
+    return False
+
+  # Check that interpolation is reasonable in between points and is behaving linearly.
+  lnbs = 0.5*(table.lnb[:-1] + table.lnb[1:])
+  yqs  = 0.5*(table.yq[:-1] + table.yq[1:])
+  lts  = 0.5*(table.lt[:-1] + table.lt[1:])
+
+  lnb, yq, lt = np.meshgrid(lnbs, yqs, lts, indexing='ij')
+
+  e_calc = table.calc_energy_dens(table.exp2_(lnb), yq, table.exp2_(lt))
+
+  e_exact = table.exp2_(0.125*(((table.log2_(table.e_raw[:-1, :-1, :-1]) +
+                                 table.log2_(table.e_raw[:-1, :-1, 1:])) + 
+                                (table.log2_(table.e_raw[:-1, 1:, :-1]) +
+                                 table.log2_(table.e_raw[:-1, 1:, 1:]))) +
+                               ((table.log2_(table.e_raw[1:, :-1, :-1]) +
+                                 table.log2_(table.e_raw[1:, :-1, 1:])) +
+                                (table.log2_(table.e_raw[1:, 1:, :-1]) +
+                                 table.log2_(table.e_raw[1:, 1:, 1:])))))
+
+  err = np.abs(e_calc/e_exact - 1.)
+  print (np.max(err))
   return np.max(err) == pytest.approx(0.0, rel=1e-15)
+
 
 def test_logpressure():
   assert check_pressure(False) == True
