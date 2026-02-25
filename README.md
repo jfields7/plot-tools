@@ -27,5 +27,6 @@ Here are some limitations of the tools:
 
 A number of examples are provided in the `examples` directory.
 
-Finally, a disclaimer: these tools are not polished and may be quite clumsy to use. Use
-at your own risk.
+Finally, a disclaimer: these tools represent an amalgamation of utilities developed to
+address specific needs as they arise. They are not clean, they are not polished, and they
+may never be. Use at your own risk.
