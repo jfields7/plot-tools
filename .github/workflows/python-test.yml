@@ -17,6 +17,6 @@ jobs:
         pip install git+https://github.com/computationalrelativity/PyCompOSE.git h5py numpy scipy pytest
         cd ${{ github.workspace }}/$tests
         echo "Running tests..."
-        for t in *.py:
-          pytest $t
+        for t in *.py; do
+          python3 -m pytest $t
         done
