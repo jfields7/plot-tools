@@ -1,10 +1,19 @@
 [build-system]
-requires = ["hatchling >= 1.26", "numpy >= 1.13", "scipy >= 1.10.0", "matplotlib >= 2.2",
-            "vtk >= 9.4"]
+requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [project]
 name = "athplot"
+dependencies = [
+  "numpy >= 1.13",
+  "scipy >= 1.10.0",
+  "matplotlib >= 2.2",
+  "vtk >= 9.4",
+  "pycompose@git+https://github.com/computationalrelativity/PyCompOSE.git",
+]
 version = "0.2"
 authors = [
   {name="Jacob Fields", email="fields@ias.edu"},

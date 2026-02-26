@@ -18,7 +18,7 @@
 import numpy as np
 import h5py as h5
 
-from scipy.interpolate import RegularGridInterpolator, interp1d
+from scipy.interpolate import RegularGridInterpolator
 
 class EquationOfState:
   """
@@ -66,7 +66,7 @@ class EquationOfState:
     self.cs2_raw = cs2
 
     # Derived scalars
-    self.hmin = np.min((e + press)/(np.array(table['nb'])[:,np.newaxis,np.newaxis]))
+    self.hmin = np.min((e + press)/(self.mn*np.array(table['nb'])[:,np.newaxis,np.newaxis]))
 
     # Construct interpolators for fields
     self.lpress = RegularGridInterpolator((self.lnb, self.yq, self.lt), self.log2_(press),
@@ -77,9 +77,15 @@ class EquationOfState:
                    method='linear', bounds_error=False, fill_value=None)
   
   def calc_temp_from_press(self, nb, yq, press):
+    # Note: this is easy to implement for a single point, but some clever logic needs to
+    # be done to vectorize it over an entire set of points. This can probably be done with
+    # Numba or something similar, though I don't know if it will be compatible with the
+    # interpolated pressure function. Alternatively, it could be done with some sort of
+    # masking procedure, though that sounds very messy, too.
     pass
 
   def calc_temp_from_e(self, nb, yq, e):
+    # See notes on calc_temp_from_press
     pass
 
   """
@@ -104,7 +110,7 @@ class EquationOfState:
 
     p = self.exp2_(self.lpress(pts))
     e = self.exp2_(self.le(pts))
-    return ((e + p)/(np.clip(nb.flatten(), nb_min, nb_max)*self.mn)).reshape(nb.shape)
+    return ((e + p)/(np.clip(nb.flatten(), self.nb_min, self.nb_max)*self.mn)).reshape(nb.shape)
 
   """
     Compute the pressure from the number density, charge fraction, and
