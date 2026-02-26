@@ -19,3 +19,6 @@ Mej_rate, Mej_rate_Ber, Mej_rate_geo = ejecta.calc_Mej_rate()
 print(Mej_rate)
 print(Mej_rate_Ber)
 print(Mej_rate_geo)
+
+def test_dummy():
+  pass
