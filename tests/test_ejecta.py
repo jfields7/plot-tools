@@ -20,5 +20,9 @@ print(Mej_rate)
 print(Mej_rate_Ber)
 print(Mej_rate_geo)
 
+flux = ejecta.calc_Poynting_flux()
+
+print(flux)
+
 def test_dummy():
   pass

@@ -53,6 +53,10 @@ class Ejecta:
     self.vely = mhd.fields['vely']
     self.velz = mhd.fields['velz']
 
+    self.bcc1 = mhd.fields['bcc1']
+    self.bcc2 = mhd.fields['bcc2']
+    self.bcc3 = mhd.fields['bcc3']
+
     self.gxx = adm.fields['adm_gxx']
     self.gxy = adm.fields['adm_gxy']
     self.gxz = adm.fields['adm_gxz']
@@ -117,6 +121,10 @@ class Ejecta:
     self.vely *= dup_corr
     self.velz *= dup_corr
 
+    self.bcc1 *= dup_corr
+    self.bcc2 *= dup_corr
+    self.bcc3 *= dup_corr
+
     self.gxx *= dup_corr
     self.gxy *= dup_corr
     self.gxz *= dup_corr
@@ -138,6 +146,75 @@ class Ejecta:
     # This also means that the Ejecta class doesn't need to know anything about how the
     # EOS is stored.
     self.eos = eos
+
+  '''
+    Compute the Poynting flux (T_em)^r_t across a spherical shell.
+    Outputs: flux
+  '''
+  def calc_Poynting_flux(self):
+    # Compute the four-velocity
+    W = np.sqrt(1.0 + (self.gxx*self.velx**2 + 2.0*self.gxy*self.velx*self.vely +
+                       2.0*self.gxz*self.velx*self.velz + self.gyy*self.vely**2 +
+                       2.0*self.gyz*self.vely*self.velz + self.gzz*self.velz**2))
+
+    ut_u = W/self.alpha
+    ux_u = self.velx - self.betax*ut_u
+    uy_u = self.vely - self.betay*ut_u
+    uz_u = self.velz - self.betaz*ut_u
+
+    # Lower the time-like component
+    ut_d = -self.alpha*W \
+           + self.gxx*self.betax*self.velx + self.gyy*self.betay*self.vely \
+           + self.gzz*self.betaz*self.velz \
+           + self.gxy*(self.betax*self.vely + self.betay*self.velx) \
+           + self.gxz*(self.betax*self.velz + self.betaz*self.velx) \
+           + self.gyz*(self.betay*self.velz + self.betaz*self.vely)
+
+    # Undensitize the magnetic field
+    sqrt_det = sqrt_det_metric_adm(self.gxx, self.gxy, self.gxz, self.gyy,
+                                   self.gyz, self.gzz, 1.0)
+    Bx = self.bcc1 / sqrt_det
+    By = self.bcc2 / sqrt_det
+    Bz = self.bcc3 / sqrt_det
+
+    # Compute the magnetic field in the fluid frame
+    Bsq = self.gxx*Bx*Bx + 2.0*self.gxy*Bx*By + 2.0*self.gxz*Bx*Bz + \
+          self.gyy*By*By + 2.0*self.gyz*By*Bz + self.gzz*Bz*Bz
+
+    BWv = self.gxx*Bx*self.velx + self.gyy*By*self.vely + self.gzz*Bz*self.velz + \
+          self.gxy*(Bx*self.vely + self.velx*By) + \
+          self.gxz*(Bx*self.velz + self.velx*Bz) + \
+          self.gyz*(By*self.velz + self.vely*Bz)
+
+    bsq = (Bsq + BWv*BWv)/(W*W)
+
+    bt_u = BWv/self.alpha
+    bx_u = (Bx + BWv*ux_u)/W
+    by_u = (By + BWv*uy_u)/W
+    bz_u = (Bz + BWv*uz_u)/W
+
+    # Lower the time-like component
+    betax_d = self.gxx*self.betax + self.gxy*self.betay + self.gxz*self.betaz
+    betay_d = self.gxy*self.betax + self.gyy*self.betay + self.gyz*self.betaz
+    betaz_d = self.gxz*self.betax + self.gyz*self.betay + self.gzz*self.betaz
+
+    betasq = self.gxx*self.betax**2 + 2.0*self.gxy*self.betax*self.betay + \
+             2.0*self.gxz*self.betax*self.betaz + self.gyy*self.betay**2 + \
+             2.0*self.gyz*self.betay*self.betaz + self.gzz*self.betaz**2
+
+    bt_d = (-self.alpha*self.alpha + betasq)*bt_u + betax_d*bx_u + betay_d*by_u + \
+            betaz_d*bz_u
+
+    # Compute the radial components of the velocity and magnetic field
+    ur_u = calc_ur(ux_u, uy_u, uz_u, self.theta, self.phi)
+    br_u = calc_ur(bx_u, by_u, bz_u, self.theta, self.phi)
+
+    # Compute the Ponyting flux
+    integrand = (bsq*ur_u*ut_d - br_u*bt_d)*self.alpha*sqrt_det*self.r**2*np.sin(self.theta)
+
+    flux = integrate_over_sphere(integrand, self.theta[0,:], self.phi[:,0])
+
+    return flux
 
   '''
     Compute the mass ejection rate, including estimates of the unbound ejecta using
