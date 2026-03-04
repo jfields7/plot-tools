@@ -91,6 +91,48 @@ class Ejecta:
       self.betay = z4c.fields['z4c_betay']
       self.betaz = z4c.fields['z4c_betaz']
 
+    # There was a bug in AthenaK at one point that led to double-counting in the data for
+    # cells near mesh-block boundaries. This is a kluge that takes care of the
+    # double-counting by recognizing that the lapse should be close to 1 but not more than
+    # 1.
+    z4c_alpha_raw = self.alpha
+    phi_zero    = (self.phi == self.phi.min())
+    theta_north = (self.theta == self.theta.min())
+    alpha_phi0  = z4c_alpha_raw[phi_zero & ~theta_north]
+    alpha_north = z4c_alpha_raw[theta_north]
+
+    # -- Build duplication correction mask (only if broken data detected) --
+    dup_corr = np.ones(z4c_alpha_raw.shape)
+    if alpha_phi0.max() > 1.0:
+        dup_corr[phi_zero] = 0.5          # phi=0: 2x duplication
+    if alpha_north.max() > 1.0:
+        dup_corr[theta_north] = 0.25      # north pole: 4x, overrides phi=0 there
+
+    self.dens *= dup_corr
+    self.press *= dup_corr
+    self.yq *= dup_corr
+    self.temperature *= dup_corr
+
+    self.velx *= dup_corr
+    self.vely *= dup_corr
+    self.velz *= dup_corr
+
+    self.gxx *= dup_corr
+    self.gxy *= dup_corr
+    self.gxz *= dup_corr
+    self.gyy *= dup_corr
+    self.gyz *= dup_corr
+    self.gxz *= dup_corr
+
+    self.alpha *= dup_corr
+    self.betax *= dup_corr
+    self.betay *= dup_corr
+    self.betaz *= dup_corr
+
+    # Further corrections in case the interpolation does not restrict the physical
+    # constraints of the data.
+    self.alpha = np.clip(self.alpha, 0.0, 1.0)
+
     # Note that the EOS is provided rather than loaded separately. This is done because
     # copies of the EOS can be rather large objects and are inconvenient to carry around.
     # This also means that the Ejecta class doesn't need to know anything about how the
