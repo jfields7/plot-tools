@@ -60,19 +60,29 @@ class Image:
 
     self.xpoints = xtransform(self.xpoints)
     self.ypoints = ytransform(self.ypoints)
-
   def make_image_data(self, xres, yres, method='nearest', return_grid=False,
                       transform=None):
     # Make the interpolation grid
     xcoord = np.linspace(self.extent[0], self.extent[1], xres)
     ycoord = np.linspace(self.extent[2], self.extent[3], yres)
-    X, Y = np.meshgrid(xcoord, ycoord, indexing='ij')
+    X, Y = np.meshgrid(xcoord, ycoord, indexing='xy')
     xpoints = self.xpoints
     ypoints = self.ypoints
     if not transform == None:
       ypoints, xpoints = transform(ypoints, xpoints)
     if return_grid:
       return X, Y, griddata((xpoints, ypoints), self.idata, (X, Y),
-                            method=method).transpose()
+                            method=method)
     return griddata((xpoints, ypoints), self.idata, (X, Y),
-                    method=method).transpose()
+                    method=method)
+
+  def make_var_data(self, xres, yres, var, extent, method='nearest', return_grid=False,
+                    transform=None, slice_loc=None):
+    self.var = var
+    self.extent = extent
+    self.ConstructData(slice_loc)
+
+    return self.make_image_data(xres, yres, method=method, return_grid=return_grid,
+                           transform=transform)
+
+
