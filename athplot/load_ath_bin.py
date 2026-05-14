@@ -68,7 +68,9 @@ class BinaryData:
       # Read in time
       line = f.readline().decode('ascii')
       self.time = float(line[7:])
-      next(f)
+      # Read in cycle
+      line = f.readline().decode('ascii')
+      self.cycle = int(line[8:])
       # Get size of Real
       line = f.readline().decode('ascii')
       if line[:19] != '  size of location=':

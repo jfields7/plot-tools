@@ -60,6 +60,32 @@ class Image:
 
     self.xpoints = xtransform(self.xpoints)
     self.ypoints = ytransform(self.ypoints)
+
+  def plot_line(self, npoints, start, end, method='linear', var=None, extent=None,
+        slice_loc=None):
+    modified = False
+    if var != None:
+      self.var = var
+      modified = True
+    if extent != None:
+      self.extent = extent
+      modified = True
+    if modified == True:
+      self.ConstructData(slice_loc)
+    # Check that the line is within the projected extent
+    if start[0] < self.extent[0] or start[0] > self.extent[1] or \
+        end[0] < self.extent[0] or end[0] > self.extent[1]:
+      raise RuntimeError("Line is not contained within x extent of Image!")
+    if start[1] < self.extent[2] or start[1] > self.extent[3] or \
+        end[1] < self.extent[2] or end[1] > self.extent[3]:
+      raise RuntimeError("Line is not contained within y extent of Image!")
+
+    xcoord = np.linspace(start[0], end[0], npoints)
+    ycoord = np.linspace(start[1], end[1], npoints)
+    xpoints = self.xpoints
+    ypoints = self.ypoints
+    return griddata((xpoints, ypoints), self.idata, (xcoord, ycoord), method=method)
+
   def make_image_data(self, xres, yres, method='nearest', return_grid=False,
                       transform=None):
     # Make the interpolation grid
