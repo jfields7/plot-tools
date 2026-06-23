@@ -61,34 +61,34 @@ class BinaryData:
 
       #print(f'Extracting metadata...')
       # Read header metadata
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       if line != 'Athena binary output version=1.1\n':
         raise RuntimeError('Unrecognized data file format.')
       next(f)
       # Read in time
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       self.time = float(line[7:])
       # Read in cycle
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       self.cycle = int(line[8:])
       # Get size of Real
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       if line[:19] != '  size of location=':
         raise RuntimeError('Could not read location size.')
       self.location_size = int(line[19:])
       # Get size of variable (usually float)
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       if line[:19] != '  size of variable=':
         raise RuntimeError('Could not read variable size.')
       self.variable_size = int(line[19:])
       # Get number of variables
       next(f)
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       if line[:12] != '  variables:':
         raise RuntimeError('Could not read variable names.')
       self.variable_names = line[12:].split()
       # Get header offset in bytes
-      line = f.readline().decode('ascii')
+      line = f.readline().decode('latin-1')
       if line[:16] != '  header offset=':
         raise RuntimeError('Could not read header offset.')
       self.header_offset = int(line[16:])
@@ -109,7 +109,7 @@ class BinaryData:
       self.input_file = {}
       self.start_of_data = f.tell() + self.header_offset
       while f.tell() < self.start_of_data:
-        line = f.readline().decode('ascii')
+        line = f.readline().decode('latin-1')
         if line[0] == '#':
           continue
         if line[0] == '<':
