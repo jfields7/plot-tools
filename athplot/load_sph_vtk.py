@@ -25,6 +25,11 @@ class SphericalData:
   """
     This class represents a VTK spherical data dump from AthenaK.
 
+    A dump may contain several concentric surfaces sharing one angular grid
+    (an <output> block with 'radii = ...' or 'r_min/r_max/nradii'), or a single
+    surface ('radius = ...'), which is just the nradii == 1 case. Files written
+    before multiple radii were supported are read as well.
+
     Note that this utility relies on the VTK python package.
   """
   def __init__(self, filename, encoding='latin_1'):
@@ -39,12 +44,26 @@ class SphericalData:
             else:
                 l += 1
 
+    # Defaults for dumps written before multiple radii were supported
+    self.nradii = 1
+    self.rmin = None
+    self.rmax = None
+
     substrings = string.split()
     for s in substrings:
         if s[:5] == 'time=':
             self.time = float(s[5:])
         if s[:6] == 'cycle=':
             self.cycle = int(s[6:])
+        if s[:7] == 'nradii=':
+            self.nradii = int(s[7:])
+        if s[:5] == 'rmin=':
+            self.rmin = float(s[5:])
+        if s[:5] == 'rmax=':
+            self.rmax = float(s[5:])
+        if s[:4] == 'rad=':
+            self.rmin = float(s[4:])
+            self.rmax = self.rmin
         if s[:3] == 'xc=':
             self.xc = float(s[3:])
         if s[:3] == 'yc=':
@@ -67,38 +86,70 @@ class SphericalData:
     # Reorganize the data into separate r, theta, and phi quantities
     dims = [0, 0, 0]
     reader.GetOutput().GetDimensions(dims)
-    if dims[0] != 1:
-      raise RuntimeError('More than one radial point detected.')
+    self.nradii = dims[0]
+    self.ntheta = dims[1]
+    self.nphi = dims[2]
+
+    # Shape of a single shell, and of a full field including the radial axis
     self.shape = (dims[2], dims[1])
+    self.shape3d = (dims[0], dims[2], dims[1])
 
-    self.r = cells[0,0]
+    # Every point stores (radius, theta, phi) and the radius varies fastest
+    self.radii = cells[:self.nradii,0]
+    self.theta = np.reshape(cells[::self.nradii,1], self.shape)
+    self.phi = np.reshape(cells[::self.nradii,2], self.shape)
 
-    self.theta = cells[:,1]
-    self.theta = np.reshape(self.theta, self.shape)
-
-    self.phi = cells[:,2]
-    self.phi = np.reshape(self.phi, self.shape)
+    if self.rmin is None:
+      self.rmin = self.radii[0]
+    if self.rmax is None:
+      self.rmax = self.radii[-1]
 
     # Read in the field data
     nfields = reader.GetOutput().GetPointData().GetNumberOfArrays()
 
     self.field_names = []
-    self.fields = {}
+    self.fields3d = {}
     for i in range(nfields):
       field = reader.GetOutput().GetPointData().GetArrayName(i)
       self.field_names.append(field)
       field_data = reader.GetOutput().GetPointData().GetArray(i)
-      self.fields[field] = numpy_support.vtk_to_numpy(field_data)
-      self.fields[field] = np.reshape(self.fields[field], self.shape)
+      self.fields3d[field] = np.moveaxis(np.reshape(numpy_support.vtk_to_numpy(field_data),
+                                                    self.shape + (self.nradii,)), -1, 0)
 
-  def plot_data(self, var, ax, cmap='viridis', norm=None, vmin=None, vmax=None):
+    # Distinguish between nradii == 1 and nradii > 1 for backward-compatibility
+    if self.nradii == 1:
+      self.r = self.radii[0]
+      self.fields = {k: v[0] for k, v in self.fields3d.items()}
+    else:
+      self.r = self.radii
+      self.fields = self.fields3d
+
+  # Return var on a single shell, with shape (nphi, ntheta).
+  def shell(self, var, iradius=0):
+    return self.fields3d[var][iradius]
+
+  # Reduce the var over the angles of each shell, giving radial profile (nradii,)
+  def radial_profile(self, var, reduction=np.mean):
+    return reduction(self.fields3d[var].reshape(self.nradii, -1).astype(np.float64),
+                     axis=1)
+
+  # Integrate var over each surface, giving array of (nradii,)
+  def integrate(self, var):
+    if 'weights' not in self.fields3d:
+      raise RuntimeError("This dump does not contain a 'weights' array.")
+    w = self.fields3d['weights'].reshape(self.nradii, -1)
+    integrand = (w*self.fields3d[var].reshape(self.nradii, -1)).astype(np.float64)
+    return np.sum(integrand, axis=1)
+
+  def plot_data(self, var, ax, cmap='viridis', norm=None, vmin=None, vmax=None,
+                iradius=0):
     # Note that phi is periodic, so for plotting purposes we need to append an extra
     # column of data to get a closed surface
-    r = self.r
+    r = self.radii[iradius]
     theta = np.append(self.theta, [self.theta[0]], axis=0)
     phi = np.append(self.phi, [2*np.pi*np.ones(self.shape[1])], axis=0)
 
-    data = np.copy(self.fields[var])
+    data = np.copy(self.fields3d[var][iradius])
     data = np.append(data, [data[0]], axis=0)
 
     X = r*np.sin(theta)*np.cos(phi)
