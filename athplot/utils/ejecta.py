@@ -219,12 +219,19 @@ class Ejecta:
   '''
     Compute the mass ejection rate, including estimates of the unbound ejecta using
     both the geodesic and Bernoulli criteria.
+    Inputs: properties_out
+      properties_out: get the velocity and charge fraction flux as well (default: False)
     Outputs: Mej_rate, Mej_rate_Ber, Mej_rate_geo
       Mej_rate: the total outgoing mass flux across the spherical surface
       Mej_rate_Ber: the estimated unbound mass flux using the Bernoulli criterion
       Mej_rate_geo: the estimated unbound mass flux using the geodesic criterion
+    Optional Outputs: velocity rates, Yq rates
+      velocity rates: the mass-weighted velocity flux for each ejecta criterion
+      Yq rates: the mass-weighted Ye flux for each ejecta criterion
+    Both optional outputs are ordered the same as above (outgoing flux, unbound
+    Bernoulli, then unbound geodesic)
   '''
-  def calc_Mej_rate(self):
+  def calc_Mej_rate(self, properties_out=False):
     # Compute the number density (in fm^-3) from the rest-mass density (in Msun^-2)
     mn = self.eos.mn
     nb = conv_dens(cactus, cgs, self.dens)*1e-39/(mn*cgs.eV*1e6/cgs.light_speed**2)
@@ -236,9 +243,10 @@ class Ejecta:
     # the energy density and add it directly to the pressure.
     h = self.eos.calc_enthalpy(nb, self.yq, self.temperature)
 
-    W = np.sqrt(1.0 + (self.gxx*self.velx**2 + 2.0*self.gxy*self.velx*self.vely +
-                       2.0*self.gxz*self.velx*self.velz + self.gyy*self.vely**2 +
-                       2.0*self.gyz*self.vely*self.velz + self.gzz*self.velz**2))
+    Wvsq = (self.gxx*self.velx**2 + 2.0*self.gxy*self.velx*self.vely +
+            2.0*self.gxz*self.velx*self.velz + self.gyy*self.vely**2 +
+            2.0*self.gyz*self.vely*self.velz + self.gzz*self.velz**2)
+    W = np.sqrt(1. + Wvsq)
 
     ut_u = W/self.alpha
     ux_u = self.velx - self.betax*ut_u
@@ -272,4 +280,22 @@ class Ejecta:
     Mej_rate_Ber = integrate_over_sphere(integrand_Ber, self.theta[0,:], self.phi[:,0])
     Mej_rate_geo = integrate_over_sphere(integrand_geo, self.theta[0,:], self.phi[:,0])
 
-    return Mej_rate, Mej_rate_Ber, Mej_rate_geo
+    if not properties_out:
+      return Mej_rate, Mej_rate_Ber, Mej_rate_geo
+    else:
+      vel = np.sqrt(Wvsq/(W*W))
+      vel_rate = integrate_over_sphere(vel*integrand, self.theta[0,:], self.phi[:,0])
+      vel_rate_Ber = integrate_over_sphere(vel*integrand_Ber, self.theta[0,:],
+                                           self.phi[:,0])
+      vel_rate_geo = integrate_over_sphere(vel*integrand_geo, self.theta[0,:],
+                                           self.phi[:,0])
+      yq = self.yq
+      yq_rate = integrate_over_sphere(yq*integrand, self.theta[0,:], self.phi[:,0])
+      yq_rate_Ber = integrate_over_sphere(yq*integrand_Ber, self.theta[0,:],
+                                          self.phi[:,0])
+      yq_rate_geo = integrate_over_sphere(yq*integrand_geo, self.theta[0,:],
+                                          self.phi[:,0])
+      
+      return Mej_rate, Mej_rate_Ber, Mej_rate_geo, \
+             vel_rate, vel_rate_Ber, vel_rate_geo, \
+             yq_rate, yq_rate_Ber, yq_rate_geo
